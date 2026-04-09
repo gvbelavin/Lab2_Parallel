@@ -3,10 +3,17 @@
 #include <thread>
 #include <iomanip>
 #include <algorithm>
-#include <functional>
 #include <cstdlib>
+#include <ctime>
 
 using namespace std;
+
+double cpuSecond()
+{
+    struct timespec ts;
+    timespec_get(&ts, TIME_UTC);
+    return static_cast<double>(ts.tv_sec) + static_cast<double>(ts.tv_nsec) * 1.e-9;
+}
 
 void init_chunk(vector<double>& a, vector<double>& b, vector<double>& c,
                 int m, int n, int row_begin, int row_end)
@@ -18,8 +25,8 @@ void init_chunk(vector<double>& a, vector<double>& b, vector<double>& c,
         c[i] = 0.0;
     }
 
-    int b_begin = static_cast<long long>(row_begin) * n / m;
-    int b_end   = static_cast<long long>(row_end) * n / m;
+    int b_begin = static_cast<int>(static_cast<long long>(row_begin) * n / m);
+    int b_end = static_cast<int>(static_cast<long long>(row_end) * n / m);
 
     for (int j = b_begin; j < b_end; ++j) {
         b[j] = j;
@@ -57,9 +64,11 @@ int main(int argc, char* argv[])
 
     vector<thread> threads;
 
+    double t_init = cpuSecond();
+
     for (unsigned int t = 0; t < num_threads; ++t) {
-        int row_begin = static_cast<long long>(t) * m / num_threads;
-        int row_end   = static_cast<long long>(t + 1) * m / num_threads;
+        int row_begin = static_cast<int>(t * m / num_threads);
+        int row_end = static_cast<int>((t + 1) * m / num_threads);
 
         threads.emplace_back(init_chunk,
                              ref(a), ref(b), ref(c),
@@ -70,11 +79,15 @@ int main(int argc, char* argv[])
         th.join();
     }
 
+    t_init = cpuSecond() - t_init;
+
     threads.clear();
 
+    double t_calc = cpuSecond();
+
     for (unsigned int t = 0; t < num_threads; ++t) {
-        int row_begin = static_cast<long long>(t) * m / num_threads;
-        int row_end   = static_cast<long long>(t + 1) * m / num_threads;
+        int row_begin = static_cast<int>(t * m / num_threads);
+        int row_end = static_cast<int>((t + 1) * m / num_threads);
 
         threads.emplace_back(matvec_chunk,
                              cref(a), cref(b), ref(c),
@@ -85,9 +98,14 @@ int main(int argc, char* argv[])
         th.join();
     }
 
-    cout << fixed << setprecision(2);
+    t_calc = cpuSecond() - t_calc;
+
+    cout << fixed << setprecision(6);
     cout << "Threads: " << num_threads << '\n';
-    cout << "First 10 elements of result vector c:\n";
+    cout << "Initialization time: " << t_init << " sec\n";
+    cout << "Computation time:    " << t_calc << " sec\n";
+
+    cout << "\nFirst 10 elements of result vector c:\n";
     for (int i = 0; i < min(10, m); ++i) {
         cout << "c[" << i << "] = " << c[i] << '\n';
     }
