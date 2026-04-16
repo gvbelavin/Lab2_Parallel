@@ -3,8 +3,16 @@
 #include <cmath>
 #include <iomanip>
 #include <omp.h>
+#include <ctime>
 
 using namespace std;
+
+double cpuSecond()
+{
+    struct timespec ts;
+    timespec_get(&ts, TIME_UTC);
+    return static_cast<double>(ts.tv_sec) + static_cast<double>(ts.tv_nsec) * 1.e-9;
+}
 
 double norm2(const vector<double>& v)
 {
@@ -37,7 +45,7 @@ int main()
     int iter = 0;
     bool done = false;
 
-    double t1 = omp_get_wtime();
+    double t = cpuSecond();
 
     #pragma omp parallel shared(x, x_new, r, rel, sumsq, iter, done)
     {
@@ -89,13 +97,13 @@ int main()
         }
     }
 
-    double t2 = omp_get_wtime();
+    t = cpuSecond() - t;
 
     cout << fixed << setprecision(8);
     cout << "\nVariant 2: single omp parallel region\n";
     cout << "Iterations: " << iter << '\n';
-    cout << "Residual:   " << rel << '\n';
-    cout << "Time:       " << (t2 - t1) << " sec\n";
+    cout << "Residual: " << rel << '\n';
+    cout << "Elapsed time (parallel): " << t << " sec\n";
     cout << "First 10 elements of x:\n";
     for (int i = 0; i < 10; i++) {
         cout << "x[" << i << "] = " << x[i] << '\n';
