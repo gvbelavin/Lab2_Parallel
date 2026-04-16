@@ -2,6 +2,14 @@
 #include <iomanip>
 #include <cmath>
 #include <omp.h>
+#include <ctime>
+
+double cpuSecond()
+{
+    struct timespec ts;
+    timespec_get(&ts, TIME_UTC);
+    return static_cast<double>(ts.tv_sec) + static_cast<double>(ts.tv_nsec) * 1.e-9;
+}
 
 double func(double x)
 {
@@ -37,7 +45,19 @@ double integrate_omp(double (*func)(double), double a, double b, int n)
 
 int main()
 {
+    std::cout << "OpenMP threads: " << omp_get_max_threads() << '\n';
+
+    double t = cpuSecond();
     double res = integrate_omp(func, -4.0, 4.0, 40000000);
-    std::cout << "Result = " << std::fixed << std::setprecision(12) << res << '\n';
+    t = cpuSecond() - t;
+
+    std::cout << "Elapsed time (parallel): "
+              << std::fixed << std::setprecision(6)
+              << t << " sec.\n";
+
+    std::cout << "Result = "
+              << std::fixed << std::setprecision(12)
+              << res << '\n';
+
     return 0;
 }
