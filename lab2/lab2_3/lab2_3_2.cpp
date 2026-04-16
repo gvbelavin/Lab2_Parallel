@@ -24,10 +24,10 @@ double norm2(const vector<double>& v)
 
 int main()
 {
-    const int N = 1000;
-    const double tau = 0.001;
+    const int N = 3000;
+    const double tau = 0.0001;
     const double eps = 1e-5;
-    const int max_iter = 100000;
+    const int max_iter = 200000;
 
     vector<vector<double>> A(N, vector<double>(N));
     vector<double> b(N), x(N, 0.0), x_new(N, 0.0), r(N, 0.0);
@@ -69,11 +69,6 @@ int main()
             #pragma omp single
             {
                 rel = sqrt(sumsq) / norm_b;
-
-                if (iter % 100 == 0) {
-                    cout << "iter = " << iter << ", residual = " << rel << endl;
-                }
-
                 if (rel < eps || iter >= max_iter)
                     done = true;
             }
@@ -100,14 +95,9 @@ int main()
     t = cpuSecond() - t;
 
     cout << fixed << setprecision(8);
-    cout << "\nVariant 2: single omp parallel region\n";
-    cout << "Iterations: " << iter << '\n';
-    cout << "Residual: " << rel << '\n';
-    cout << "Elapsed time (parallel): " << t << " sec\n";
-    cout << "First 10 elements of x:\n";
-    for (int i = 0; i < 10; i++) {
-        cout << "x[" << i << "] = " << x[i] << '\n';
-    }
+    cout << "Result = " << rel << '\n';
+    cout << "Time = " << t << " sec\n";
+    cout << "Threads = " << omp_get_max_threads() << '\n';
 
     return 0;
 }
